@@ -22,3 +22,8 @@ class SignalConfig:
     vol_spike_mult: float = 1.5
     atr_mult_thresh: float = 1.2
     salience_z: float = 1.0
+
+
+ENABLE_TA_FEATURES: bool = True
+TA_FEATURE_MIN_BMB: float = 0.2
+TA_BLOCK_EARNINGS_WINDOWS = ("earnings_1d", "earnings_0d")
