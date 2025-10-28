@@ -1,0 +1,11 @@
+__pycache__/
+*.pyc
+*.pyo
+*.swp
+.quant_edge.db
+quant_edge.db
+reports/
+.data/
+.env
+.pytest_cache/
+data/ta_cache/
