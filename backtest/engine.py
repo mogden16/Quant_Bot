@@ -1,5 +1,13 @@
+import argparse
+import sys
+from pathlib import Path
+
 import pandas as pd
 import numpy as np
+
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.append(str(PROJECT_ROOT))
 from core.config import RiskConfig, SizingConfig, SignalConfig
 from core.features import compute_features
 from core.signals import combine_signals
@@ -8,13 +16,16 @@ from core.risk import atr_stop_target
 from core.regime import RegimeGate
 from data.ingest import load_prices
 
-def backtest(symbol="DEMO", equity=100000.0):
+
+def backtest(symbol: str = "SPY", start: str = "2020-01-01", end: str | None = None, equity: float = 100000.0):
     risk_cfg = RiskConfig()
     size_cfg = SizingConfig()
     sig_cfg = SignalConfig()
     gate = RegimeGate()
 
-    df = load_prices(symbol)
+    print(f"Downloading data for {symbol} from {start} to {end or 'present'}...")
+    df = load_prices(symbol=symbol, start=start, end=end)
+    print(f"Loaded {len(df)} bars.")
     feat = compute_features(df)
 
     trades = []
@@ -52,7 +63,7 @@ def backtest(symbol="DEMO", equity=100000.0):
                 continue
 
         if open_pos is None and gate.allow(ret_history):
-            sigs = combine_signals(feat.iloc[:i+1], sig_cfg)
+            sigs = combine_signals(feat.iloc[:i+1].copy(), sig_cfg)
             if not sigs:
                 continue
             s = sorted(sigs, key=lambda x: x.strength, reverse=True)[0]
@@ -88,4 +99,10 @@ def backtest(symbol="DEMO", equity=100000.0):
     return trades
 
 if __name__ == "__main__":
-    backtest()
+    parser = argparse.ArgumentParser(description="Run the trading backtest")
+    parser.add_argument("--symbol", default="SPY", help="Ticker symbol to backtest")
+    parser.add_argument("--start", default="2020-01-01", help="Start date (YYYY-MM-DD)")
+    parser.add_argument("--end", default=None, help="End date (YYYY-MM-DD)")
+    args = parser.parse_args()
+
+    backtest(symbol=args.symbol, start=args.start, end=args.end)

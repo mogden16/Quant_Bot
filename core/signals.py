@@ -59,8 +59,9 @@ def reversal_signal(feat: pd.DataFrame, cfg: SignalConfig):
     s = []
     if not _ta_allows_long(feat):
         return s
-    if 'ret_2d' not in feat:
-        feat['ret_2d'] = feat['close'].pct_change(2)
+    if 'ret_2d' not in feat.columns:
+        feat = feat.copy()
+        feat.loc[:, 'ret_2d'] = feat['close'].pct_change(2, fill_method=None)
     cond = (feat['ret_2d'] < cfg.rev_ret_thresh) & (feat['salience'] > cfg.salience_z)
     if cond.iloc[-1]:
         s.append(SignalOutput(side="long", kind="reversal",

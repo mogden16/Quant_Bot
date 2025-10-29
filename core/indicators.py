@@ -15,7 +15,7 @@ def rsi(series: pd.Series, n: int = 14):
     return 100 - (100 / (1 + rs))
 
 def rolling_vol(series: pd.Series, n: int = 20):
-    return series.pct_change().rolling(n).std()
+    return series.pct_change(fill_method=None).rolling(n).std()
 
 def zscore(series: pd.Series, n: int = 20):
     mean = series.rolling(n).mean()
