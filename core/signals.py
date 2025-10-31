@@ -6,8 +6,21 @@ from .config import (
     SignalConfig,
     TA_BLOCK_EARNINGS_WINDOWS,
     TA_FEATURE_MIN_BMB,
+    USE_RL_POLICY,
 )
 from .regime_ta import is_ta_enabled
+
+try:  # pragma: no cover - optional during tests
+    from rl.environment import RLTradingEnv, build_observation_from_window
+    from rl import get_active_policy
+except Exception:  # pragma: no cover - RL integration optional
+    RLTradingEnv = None  # type: ignore[assignment]
+
+    def build_observation_from_window(*args, **kwargs):  # type: ignore[override]
+        raise RuntimeError("RL environment unavailable")
+
+    def get_active_policy():  # type: ignore[override]
+        return None
 
 @dataclass
 class SignalOutput:
@@ -69,6 +82,27 @@ def reversal_signal(feat: pd.DataFrame, cfg: SignalConfig):
     return s
 
 def combine_signals(feat: pd.DataFrame, cfg: SignalConfig):
+    if USE_RL_POLICY:
+        if RLTradingEnv is None:
+            raise RuntimeError("USE_RL_POLICY enabled but RL modules are unavailable")
+        policy = get_active_policy()
+        if policy is None:
+            return []
+        observation = build_observation_from_window(feat)
+        action = policy.select_action(observation, explore=False)
+        if action == RLTradingEnv.ACTION_OPEN_LONG:
+            strength = float(observation.mean()) if observation.size else 0.0
+            return [
+                SignalOutput(
+                    side="long",
+                    kind="rl",
+                    strength=strength,
+                    p_win=0.55,
+                    payoff=1.2,
+                )
+            ]
+        return []
+
     out = []
     out += momentum_signal(feat, cfg)
     out += reversal_signal(feat, cfg)

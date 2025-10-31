@@ -23,6 +23,7 @@ from agents.ta_client import fetch_batch
 from app.db import SessionLocal, init_db
 from app.models import upsert_agent_features
 from core import regime_ta
+import core.config as cfg
 from core.config import RiskConfig, SignalConfig, SizingConfig
 from core.features import compute_features
 from core.features_ta import merge_ta_features
@@ -64,6 +65,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--end", type=str, default="2023-12-31", help="End date (YYYY-MM-DD)")
     parser.add_argument("--enable-ta", type=str, default="true", help="Whether to run TA ablation (true/false)")
     parser.add_argument("--mock-ta", type=str, default="false", help="Force TA mock mode (true/false)")
+    parser.add_argument("--use-rl", type=str, default="false", help="Evaluate an RL policy (true/false)")
+    parser.add_argument("--rl-policy", type=str, default=None, help="Path to a saved RL policy checkpoint")
     return parser.parse_args()
 
 
@@ -149,8 +152,6 @@ def _build_plot(equity_curve: Sequence[float], drawdown_curve: Sequence[float], 
 
 
 def _ensure_ta_state(enabled: bool):
-    import core.config as cfg
-
     cfg.ENABLE_TA_FEATURES = enabled
     if not enabled:
         regime_ta.reset_regime_state()
@@ -271,12 +272,26 @@ def main():
     symbols = [s.strip().upper() for s in args.symbols.split(",") if s.strip()]
     start = pd.Timestamp(args.start)
     end = pd.Timestamp(args.end)
+    use_rl = _parse_bool(args.use_rl)
+    rl_policy_path = args.rl_policy
 
     if _parse_bool(args.mock_ta):
         os.environ["TA_MOCK"] = "1"
 
     init_db()
     session = SessionLocal()
+
+    clear_active_policy = None
+    if use_rl:
+        if rl_policy_path is None:
+            raise SystemExit("--rl-policy must be provided when --use-rl is true")
+        from rl.policy import SimpleActorCriticPolicy
+        from rl import set_active_policy, clear_active_policy as _clear
+
+        policy = SimpleActorCriticPolicy.load(rl_policy_path)
+        set_active_policy(policy)
+        cfg.USE_RL_POLICY = True
+        clear_active_policy = _clear
 
     try:
         price_data = {}
@@ -371,6 +386,9 @@ def main():
             json.dump(summary, fh, indent=2)
 
     finally:
+        if clear_active_policy is not None:
+            clear_active_policy()
+            cfg.USE_RL_POLICY = False
         session.close()
 
 
