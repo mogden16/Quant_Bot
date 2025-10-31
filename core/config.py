@@ -24,6 +24,20 @@ class SignalConfig:
     salience_z: float = 1.0
 
 
+@dataclass
+class BacktestConfig:
+    max_holding_bars: int = 5
+    flatten_eod: bool = False
+
+
+@dataclass
+class ExecutionConfig:
+    commission_bps: float = 1.0
+    slippage_bps: float = 1.0
+    skip_first_minutes: int = 0
+    skip_last_minutes: int = 0
+
+
 ENABLE_TA_FEATURES: bool = True
 TA_FEATURE_MIN_BMB: float = 0.2
 TA_BLOCK_EARNINGS_WINDOWS = ("earnings_1d", "earnings_0d")
