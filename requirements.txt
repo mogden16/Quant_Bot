@@ -10,3 +10,4 @@ dash==2.18.1
 python-dateutil==2.9.0.post0
 requests==2.32.3
 yfinance==0.2.43
+torch==2.4.1

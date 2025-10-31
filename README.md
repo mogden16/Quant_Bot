@@ -39,6 +39,34 @@ Outputs are saved under `reports/ablation_<timestamp>/` (CSV trades, equity plot
 make ablation
 ```
 
+## Reinforcement Learning Mode
+Optional reinforcement learning support lets you replace the deterministic momentum/reversal rules with a learnable policy while
+keeping the existing backtest and reporting stack intact.
+
+1. Install the optional dependency:
+
+   ```bash
+   pip install torch
+   ```
+
+   (Stable Baselines3 can be plugged in as an alternative policy backend if you already have a trained model.)
+
+2. Train a policy using the dedicated CLI. This wraps the trading loop in a gym-style environment and writes checkpoints and
+   metrics to `reports/rl/`:
+
+   ```bash
+   python rl/train.py --symbols AAPL --start 2023-01-01 --end 2023-06-30 --episodes 10 --use-ta
+   ```
+
+3. Evaluate the trained policy in the existing ablation workflow by loading the checkpoint and enabling RL mode:
+
+   ```bash
+   python backtest/ablation.py --symbols AAPL --start 2023-07-01 --end 2023-12-31 --use-rl true --rl-policy reports/rl/run_<timestamp>/policy.pt
+   ```
+
+During RL evaluation the ablation script toggles the RL policy in place of the heuristic signals while preserving TA ablation and
+report generation.
+
 ## Testing
 ```bash
 pytest          # or make test

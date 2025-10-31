@@ -41,3 +41,8 @@ class ExecutionConfig:
 ENABLE_TA_FEATURES: bool = True
 TA_FEATURE_MIN_BMB: float = 0.2
 TA_BLOCK_EARNINGS_WINDOWS = ("earnings_1d", "earnings_0d")
+
+# Reinforcement learning integration toggle. When ``True`` the signal layer
+# will attempt to source trade intents from a registered RL policy instead of
+# deterministic heuristics.
+USE_RL_POLICY: bool = False
